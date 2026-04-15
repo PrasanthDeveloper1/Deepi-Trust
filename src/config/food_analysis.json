@@ -1,0 +1,185 @@
+{
+  "version": "2.0.0",
+  "engine": "Deepi Trust Food Vision Engine",
+  "description": "Client-side food detection and quality analysis using color spectrum analysis, pattern recognition, and configurable scoring rubrics. No external API keys required.",
+
+  "detection": {
+    "weights": {
+      "food_color": 0.70,
+      "saturation": 0.50,
+      "diversity": 0.30,
+      "brightness_penalty": -0.25,
+      "gray_penalty": -0.40
+    },
+    "thresholds": {
+      "food_color_minimum": 0.22,
+      "food_confidence_minimum": 0.42,
+      "min_saturation": 0.10,
+      "min_color_diversity": 2
+    },
+    "non_food": {
+      "document_gray_threshold": 0.55,
+      "document_saturation_max": 0.10,
+      "sky_blue_threshold": 0.35,
+      "dark_image_threshold": 0.50,
+      "bright_image_threshold": 0.55,
+      "skin_tone_dominant_threshold": 0.45,
+      "uniform_color_threshold": 0.70
+    }
+  },
+
+  "quality_scoring": {
+    "freshness": { "min": 55, "max": 98, "weight": 0.30 },
+    "packaging": { "min": 58, "max": 95, "weight": 0.15 },
+    "hygiene":   { "min": 55, "max": 97, "weight": 0.25 },
+    "temperature": { "min": 56, "max": 96, "weight": 0.15 },
+    "contamination": { "min": 58, "max": 98, "weight": 0.15 }
+  },
+
+  "quality_notes": {
+    "freshness": {
+      "excellent": "Vibrant, saturated colors indicate very fresh food",
+      "good": "Colors appear fresh and well-maintained",
+      "fair": "Moderate freshness — some color dulling noted",
+      "poor": "Significant color degradation suggests staleness"
+    },
+    "packaging": {
+      "excellent": "Well-organized, clean container presentation",
+      "good": "Adequate packaging and containment visible",
+      "fair": "Basic containment — could be improved",
+      "poor": "Poor packaging — food appears exposed"
+    },
+    "hygiene": {
+      "excellent": "Clean preparation environment clearly evident",
+      "good": "Reasonable cleanliness maintained throughout",
+      "fair": "Minor cleanliness concerns noted",
+      "poor": "Significant hygiene concerns visible"
+    },
+    "temperature": {
+      "excellent": "Warm tones suggest proper serving temperature",
+      "good": "Temperature indicators appear acceptable",
+      "fair": "Temperature conditions may not be optimal",
+      "poor": "Food appears cold or improperly stored"
+    },
+    "contamination": {
+      "excellent": "No contamination indicators detected",
+      "good": "Very low contamination risk observed",
+      "fair": "Minor anomalies noted — low risk",
+      "poor": "Potential contamination signs detected"
+    }
+  },
+
+  "food_profiles": [
+    {
+      "name": "Rice & Grain Dishes",
+      "warm_min": 0.20, "warm_max": 0.60,
+      "green_min": 0.00, "green_max": 0.15,
+      "sat_min": 0.08, "sat_max": 0.35,
+      "light_min": 0.40, "light_max": 0.72,
+      "warm_weight": 1.5, "green_weight": 0.5, "sat_weight": 0.5, "light_weight": 1.0
+    },
+    {
+      "name": "Curry & Gravy Dishes",
+      "warm_min": 0.30, "warm_max": 0.85,
+      "green_min": 0.00, "green_max": 0.20,
+      "sat_min": 0.22, "sat_max": 0.70,
+      "light_min": 0.22, "light_max": 0.55,
+      "warm_weight": 2.0, "green_weight": 0.3, "sat_weight": 1.0, "light_weight": 0.5
+    },
+    {
+      "name": "Vegetable Dishes & Salad",
+      "warm_min": 0.00, "warm_max": 0.30,
+      "green_min": 0.18, "green_max": 0.70,
+      "sat_min": 0.18, "sat_max": 0.65,
+      "light_min": 0.28, "light_max": 0.62,
+      "warm_weight": 0.5, "green_weight": 2.0, "sat_weight": 0.8, "light_weight": 0.5
+    },
+    {
+      "name": "Fried & Baked Items",
+      "warm_min": 0.35, "warm_max": 0.90,
+      "green_min": 0.00, "green_max": 0.10,
+      "sat_min": 0.12, "sat_max": 0.50,
+      "light_min": 0.28, "light_max": 0.58,
+      "warm_weight": 2.0, "green_weight": 0.3, "sat_weight": 0.7, "light_weight": 0.8
+    },
+    {
+      "name": "Bread & Roti",
+      "warm_min": 0.28, "warm_max": 0.72,
+      "green_min": 0.00, "green_max": 0.05,
+      "sat_min": 0.06, "sat_max": 0.30,
+      "light_min": 0.35, "light_max": 0.68,
+      "warm_weight": 1.5, "green_weight": 0.2, "sat_weight": 0.8, "light_weight": 1.0
+    },
+    {
+      "name": "Fresh Fruits",
+      "warm_min": 0.12, "warm_max": 0.55,
+      "green_min": 0.05, "green_max": 0.45,
+      "sat_min": 0.32, "sat_max": 0.82,
+      "light_min": 0.30, "light_max": 0.72,
+      "warm_weight": 1.0, "green_weight": 1.0, "sat_weight": 1.5, "light_weight": 0.5
+    },
+    {
+      "name": "Soup & Stew",
+      "warm_min": 0.28, "warm_max": 0.72,
+      "green_min": 0.02, "green_max": 0.22,
+      "sat_min": 0.18, "sat_max": 0.55,
+      "light_min": 0.18, "light_max": 0.48,
+      "warm_weight": 1.5, "green_weight": 0.8, "sat_weight": 1.0, "light_weight": 1.0
+    },
+    {
+      "name": "Sweets & Desserts",
+      "warm_min": 0.28, "warm_max": 0.80,
+      "green_min": 0.00, "green_max": 0.10,
+      "sat_min": 0.18, "sat_max": 0.62,
+      "light_min": 0.38, "light_max": 0.78,
+      "warm_weight": 1.5, "green_weight": 0.2, "sat_weight": 1.0, "light_weight": 1.2
+    },
+    {
+      "name": "Mixed Meal / Thali",
+      "warm_min": 0.12, "warm_max": 0.52,
+      "green_min": 0.08, "green_max": 0.32,
+      "sat_min": 0.18, "sat_max": 0.52,
+      "light_min": 0.28, "light_max": 0.62,
+      "warm_weight": 1.2, "green_weight": 1.2, "sat_weight": 0.8, "light_weight": 0.8
+    },
+    {
+      "name": "Beverages",
+      "warm_min": 0.08, "warm_max": 0.48,
+      "green_min": 0.00, "green_max": 0.15,
+      "sat_min": 0.08, "sat_max": 0.48,
+      "light_min": 0.12, "light_max": 0.58,
+      "warm_weight": 1.0, "green_weight": 0.5, "sat_weight": 1.0, "light_weight": 1.5
+    },
+    {
+      "name": "Packaged / Canned Food",
+      "warm_min": 0.08, "warm_max": 0.42,
+      "green_min": 0.00, "green_max": 0.18,
+      "sat_min": 0.12, "sat_max": 0.52,
+      "light_min": 0.32, "light_max": 0.72,
+      "warm_weight": 0.8, "green_weight": 0.5, "sat_weight": 1.5, "light_weight": 1.0
+    },
+    {
+      "name": "Dairy Products",
+      "warm_min": 0.03, "warm_max": 0.30,
+      "green_min": 0.00, "green_max": 0.10,
+      "sat_min": 0.03, "sat_max": 0.25,
+      "light_min": 0.48, "light_max": 0.88,
+      "warm_weight": 0.8, "green_weight": 0.3, "sat_weight": 0.8, "light_weight": 2.0
+    }
+  ],
+
+  "grade_boundaries": {
+    "A_plus": { "min": 95, "label": "Exceptional Quality" },
+    "A":      { "min": 85, "label": "Excellent Quality" },
+    "B":      { "min": 70, "label": "Good Quality" },
+    "C":      { "min": 60, "label": "Acceptable Quality" },
+    "D":      { "min": 50, "label": "Below Standard" },
+    "F":      { "min": 0,  "label": "Unsafe for Distribution" }
+  },
+
+  "safety": {
+    "minimum_overall_score": 60,
+    "maximum_fail_categories": 0,
+    "auto_reject_below": 45
+  }
+}
