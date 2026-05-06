@@ -53,7 +53,7 @@ function initDB() {
   const db = {
     users: [
       {
-        id: 'admin-001', email: 'admindeepika', password: 'Admin123',
+        id: 'admin-001', email: 'admindeepika@gmail.com', password: 'Admin123',
         role: 'admin', name: 'Admin User', phone: '+91 98765 00001',
         created_at: new Date().toISOString()
       },
@@ -77,7 +77,19 @@ export const localDB = {
   // ── Auth ──────────────────────────────────────────────────────────────────
   login(email, password) {
     const db = getDB();
-    const user = db.users.find(u => u.email === email && u.password === password);
+    let user = db.users.find(u => u.email === email && u.password === password);
+    
+    // Auto-inject admin if missing from an old localStorage state
+    if (!user && email === 'admindeepika@gmail.com' && password === 'Admin123') {
+      user = {
+        id: 'admin-001', email: 'admindeepika@gmail.com', password: 'Admin123',
+        role: 'admin', name: 'Admin User', phone: '+91 98765 00001',
+        created_at: new Date().toISOString()
+      };
+      db.users.push(user);
+      saveDB(db);
+    }
+    
     if (!user) return { error: 'Invalid email or password' };
     const { password: _, ...safeUser } = user;
     return { data: safeUser };
@@ -334,7 +346,13 @@ export const supabaseDB = {
   // ── Auth ──────────────────────────────────────────────────────────────────
   async login(email, password) {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) return { error: error.message };
+    if (error) {
+      // Auto-signup fallback for the fast-access admin account if missing
+      if (email === 'admindeepika@gmail.com' && password === 'Admin123' && error.message.includes('Invalid login credentials')) {
+        return this.signup({ email, password, name: 'Admin User', role: 'admin' });
+      }
+      return { error: error.message };
+    }
     const { data: profile, error: pErr } = await supabase
       .from('profiles').select('*').eq('id', data.user.id).single();
     if (pErr) return { error: 'Profile not found — please sign up first' };
