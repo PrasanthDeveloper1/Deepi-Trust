@@ -354,8 +354,8 @@ export const supabaseDB = {
       return { error: error.message };
     }
     const { data: profile, error: pErr } = await supabase
-      .from('profiles').select('*').eq('id', data.user.id).single();
-    if (pErr) return { error: 'Profile not found — please sign up first' };
+      .from('profiles').select('*').eq('id', data.user.id).maybeSingle();
+    if (pErr || !profile) return { error: 'Profile not found — please sign up first' };
     return { data: profile };
   },
 
@@ -384,7 +384,7 @@ export const supabaseDB = {
   },
 
   async getUser(id) {
-    const { data } = await supabase.from('profiles').select('*').eq('id', id).single();
+    const { data } = await supabase.from('profiles').select('*').eq('id', id).maybeSingle();
     return data;
   },
 
@@ -457,7 +457,7 @@ export const supabaseDB = {
 
   async acceptDeliveryRequest(donationId, agentId, agentName) {
     const { data: req } = await supabase.from('delivery_requests')
-      .select('*').eq('donation_id', donationId).eq('status', 'open').single();
+      .select('*').eq('donation_id', donationId).eq('status', 'open').maybeSingle();
     if (!req) return { error: 'Request already taken or expired' };
     await supabase.from('delivery_requests')
       .update({ status: 'accepted', accepted_by: agentId }).eq('id', req.id);
@@ -481,7 +481,7 @@ export const supabaseDB = {
   },
 
   async getAgentLocation(agentId) {
-    const { data } = await supabase.from('agent_locations').select('*').eq('agent_id', agentId).single();
+    const { data } = await supabase.from('agent_locations').select('*').eq('agent_id', agentId).maybeSingle();
     return data || null;
   },
 
@@ -515,7 +515,7 @@ export const supabaseDB = {
 
   // ── Admin QR ──────────────────────────────────────────────────────────────
   async getAdminQR() {
-    const { data } = await supabase.from('admin_settings').select('value').eq('key', 'admin_qr').single();
+    const { data } = await supabase.from('admin_settings').select('value').eq('key', 'admin_qr').maybeSingle();
     return data?.value || null;
   },
 
