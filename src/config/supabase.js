@@ -345,18 +345,48 @@ export const localDB = {
 export const supabaseDB = {
   // ── Auth ──────────────────────────────────────────────────────────────────
   async login(email, password) {
+    // Try to sign in
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      // Auto-signup fallback for the fast-access admin account if missing
+      // Auto-signup fallback for the admin account
       if (email === 'admindeepika@gmail.com' && password === 'Admin123' && error.message.includes('Invalid login credentials')) {
-        return this.signup({ email, password, name: 'Admin User', role: 'admin' });
+        // Try signup
+        const signupResult = await this.signup({ email, password, name: 'Admin User', role: 'admin' });
+        if (signupResult.error && signupResult.error.includes('already registered')) {
+          // User exists in auth but signup failed — try login again
+          const { data: d2, error: e2 } = await supabase.auth.signInWithPassword({ email, password });
+          if (e2) return { error: e2.message };
+          return this._ensureProfile(d2.user, { name: 'Admin User', role: 'admin', email });
+        }
+        return signupResult;
       }
       return { error: error.message };
     }
-    const { data: profile, error: pErr } = await supabase
-      .from('profiles').select('*').eq('id', data.user.id).maybeSingle();
-    if (pErr || !profile) return { error: 'Profile not found — please sign up first' };
-    return { data: profile };
+    // Sign-in succeeded — fetch profile
+    return this._ensureProfile(data.user, { name: email.split('@')[0], role: 'donor', email });
+  },
+
+  // Ensure a profile exists for the authenticated user
+  async _ensureProfile(user, defaults) {
+    const { data: profile } = await supabase
+      .from('profiles').select('*').eq('id', user.id).maybeSingle();
+    if (profile) return { data: profile };
+    // Profile missing — create it (handles orphaned auth users)
+    const newProfile = {
+      id: user.id,
+      email: defaults.email || user.email,
+      name: defaults.name || user.email.split('@')[0],
+      role: defaults.role || 'donor',
+      phone: defaults.phone || null,
+      address: defaults.address || null,
+      upi_id: defaults.upi_id || null,
+      payment_qr: defaults.payment_qr || null,
+      coords: defaults.coords || null,
+    };
+    const { data: created, error: createErr } = await supabase
+      .from('profiles').insert(newProfile).select().single();
+    if (createErr) return { error: createErr.message };
+    return { data: created };
   },
 
   async signup(userData) {
@@ -365,7 +395,14 @@ export const supabaseDB = {
       password: userData.password,
     });
     if (error) return { error: error.message };
+    // If user was already registered, data.user exists but session may be null
+    if (!data.user) return { error: 'Signup failed — no user returned' };
     const userId = data.user.id;
+    // Check if profile already exists (handle re-signup)
+    const { data: existing } = await supabase
+      .from('profiles').select('*').eq('id', userId).maybeSingle();
+    if (existing) return { data: existing };
+    // Create profile
     const profile = {
       id: userId,
       email: userData.email,
