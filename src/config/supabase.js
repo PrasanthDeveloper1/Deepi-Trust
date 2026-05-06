@@ -345,24 +345,9 @@ export const localDB = {
 export const supabaseDB = {
   // ── Auth ──────────────────────────────────────────────────────────────────
   async login(email, password) {
-    // Try to sign in
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      // Auto-signup fallback for the admin account
-      if (email === 'admindeepika@gmail.com' && password === 'Admin123' && error.message.includes('Invalid login credentials')) {
-        // Try signup
-        const signupResult = await this.signup({ email, password, name: 'Admin User', role: 'admin' });
-        if (signupResult.error && signupResult.error.includes('already registered')) {
-          // User exists in auth but signup failed — try login again
-          const { data: d2, error: e2 } = await supabase.auth.signInWithPassword({ email, password });
-          if (e2) return { error: e2.message };
-          return this._ensureProfile(d2.user, { name: 'Admin User', role: 'admin', email });
-        }
-        return signupResult;
-      }
-      return { error: error.message };
-    }
-    // Sign-in succeeded — fetch profile
+    if (error) return { error: error.message };
+    // Fetch or create profile
     return this._ensureProfile(data.user, { name: email.split('@')[0], role: 'donor', email });
   },
 
