@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import { db, isDemoMode, supabase } from '../config/supabase';
 
 const AuthContext = createContext();
@@ -6,10 +6,11 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  // Prevent onAuthStateChange from overriding explicit setUser during login/signup
+  const skipAuthListener = useRef(false);
 
   useEffect(() => {
     if (isDemoMode) {
-      // Demo mode: restore session from localStorage
       const stored = localStorage.getItem('deepi_auth_user');
       if (stored) {
         try { setUser(JSON.parse(stored)); }
@@ -19,13 +20,14 @@ export const AuthProvider = ({ children }) => {
     } else {
       // Supabase mode: listen for auth state changes
       const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        // Skip if login/signup is handling user state directly
+        if (skipAuthListener.current) return;
         if (session?.user) {
-          // Fetch profile
-          const { data: profile } = await supabase
-            .from('profiles').select('*').eq('id', session.user.id).single();
-          if (profile) {
-            setUser(profile);
-          }
+          try {
+            const { data: profile } = await supabase
+              .from('profiles').select('*').eq('id', session.user.id).maybeSingle();
+            if (profile) setUser(profile);
+          } catch (e) { /* ignore fetch errors during auth transitions */ }
         } else {
           setUser(null);
         }
@@ -34,9 +36,11 @@ export const AuthProvider = ({ children }) => {
       // Check initial session
       supabase.auth.getSession().then(async ({ data: { session } }) => {
         if (session?.user) {
-          const { data: profile } = await supabase
-            .from('profiles').select('*').eq('id', session.user.id).single();
-          if (profile) setUser(profile);
+          try {
+            const { data: profile } = await supabase
+              .from('profiles').select('*').eq('id', session.user.id).maybeSingle();
+            if (profile) setUser(profile);
+          } catch (e) { /* ignore */ }
         }
         setLoading(false);
       });
@@ -45,43 +49,60 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    const result = await db.login(email, password);
-    if (result.error) return { error: result.error };
-    if (isDemoMode) {
+    try {
+      skipAuthListener.current = true;
+      const result = await db.login(email, password);
+      if (result.error) { skipAuthListener.current = false; return { error: result.error }; }
+      // Always set user explicitly — don't rely on onAuthStateChange
       setUser(result.data);
-      localStorage.setItem('deepi_auth_user', JSON.stringify(result.data));
+      if (isDemoMode) {
+        localStorage.setItem('deepi_auth_user', JSON.stringify(result.data));
+      }
+      // Fire-and-forget notification (don't block login)
+      db.addNotification({
+        user_id: result.data.id,
+        role: result.data.role,
+        title: 'Welcome Back!',
+        message: `Logged in successfully as ${result.data.role}`,
+        type: 'info'
+      }).catch(() => {});
+      skipAuthListener.current = false;
+      return { data: result.data };
+    } catch (e) {
+      skipAuthListener.current = false;
+      return { error: e.message || 'Login failed' };
     }
-    // Supabase mode: auth state listener handles setUser automatically
-    await db.addNotification({
-      user_id: result.data.id,
-      role: result.data.role,
-      title: 'Welcome Back!',
-      message: `Logged in successfully as ${result.data.role}`,
-      type: 'info'
-    });
-    return { data: result.data };
   };
 
   const signup = async (userData) => {
-    const result = await db.signup(userData);
-    if (result.error) return { error: result.error };
-    if (isDemoMode) {
+    try {
+      skipAuthListener.current = true;
+      const result = await db.signup(userData);
+      if (result.error) { skipAuthListener.current = false; return { error: result.error }; }
+      // Always set user explicitly
       setUser(result.data);
-      localStorage.setItem('deepi_auth_user', JSON.stringify(result.data));
+      if (isDemoMode) {
+        localStorage.setItem('deepi_auth_user', JSON.stringify(result.data));
+      }
+      // Fire-and-forget notification
+      db.addNotification({
+        user_id: result.data.id,
+        role: result.data.role,
+        title: 'Welcome to Deepi Trust!',
+        message: `Your account has been created as ${result.data.role}. Welcome aboard!`,
+        type: 'info'
+      }).catch(() => {});
+      skipAuthListener.current = false;
+      return { data: result.data };
+    } catch (e) {
+      skipAuthListener.current = false;
+      return { error: e.message || 'Signup failed' };
     }
-    await db.addNotification({
-      user_id: result.data.id, // notify the user themselves
-      role: result.data.role,
-      title: 'Welcome to Deepi Trust!',
-      message: `Your account has been created as ${result.data.role}. Welcome aboard!`,
-      type: 'info'
-    });
-    return { data: result.data };
   };
 
   const logout = async () => {
     if (!isDemoMode) {
-      await supabase.auth.signOut();
+      try { await supabase.auth.signOut(); } catch (e) { /* ignore */ }
     }
     setUser(null);
     localStorage.removeItem('deepi_auth_user');
