@@ -14,6 +14,10 @@ if (!isDemoMode) {
       persistSession: true,
       detectSessionInUrl: true,
       flowType: 'implicit',
+      // Bypass Web Locks API which causes persistent lock timeouts
+      lock: async (name, acquireTimeout, fn) => {
+        return await fn();
+      },
     }
   });
 }
