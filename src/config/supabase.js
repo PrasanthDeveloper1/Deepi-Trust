@@ -7,7 +7,15 @@ export const isDemoMode = !supabaseUrl || !supabaseAnonKey;
 
 let supabase = null;
 if (!isDemoMode) {
-  supabase = createClient(supabaseUrl, supabaseAnonKey);
+  supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      storageKey: 'deepi-trust-auth-v2',
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true,
+      flowType: 'implicit',
+    }
+  });
 }
 export { supabase };
 
