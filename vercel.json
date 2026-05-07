@@ -1,7 +1,11 @@
 {
-  "routes": [
-    { "src": "/api/data", "dest": "/api/data.js" },
-    { "handle": "filesystem" },
-    { "src": "/(.*)", "dest": "/index.html" }
+  "functions": {
+    "api/data.js": {
+      "memory": 128,
+      "maxDuration": 10
+    }
+  },
+  "rewrites": [
+    { "source": "/((?!api).*)", "destination": "/index.html" }
   ]
 }
